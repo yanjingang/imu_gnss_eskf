@@ -11,31 +11,38 @@ class ESKF_Fusion
 {
 public:
     ESKF_Fusion(ros::NodeHandle nh){
+        std::string imu_topic = "/imu_raw";
+        std::string gps_topic = "/gps/fix";
+        std::string odom_topic = "/nav/odom";
+        std::string path_topic = "/nav/path";
+        std::string save_path = "/home/work/";
         double acc_n, gyr_n, acc_w, gyr_w;
+        double x, y, z;
+        nh.param("imu_topic", imu_topic);
+        nh.param("gps_topic", gps_topic);
         nh.param("acc_noise", acc_n, 1e-2);
         nh.param("gyr_noise", gyr_n, 1e-4);
         nh.param("acc_bias_noise", acc_w, 1e-6);
         nh.param("gyr_bias_noise", gyr_w, 1e-8);
-        double x, y, z;
         nh.param("p_I_GNSS_x", x, 0.);
         nh.param("p_I_GNSS_y", y, 0.);
         nh.param("p_I_GNSS_z", z, 0.);
+        nh.param("odom_topic", odom_topic);
+        nh.param("path_topic", path_topic);
+        nh.param("save_path", save_path);
         const Eigen::Vector3d p_I_GNSS(x, y, z);
         eskf_ptr_ = std::make_shared<ESKF>(acc_n, gyr_n, acc_w, gyr_w, p_I_GNSS);
 
         // ROS sub & pub
-        std::string topic_imu = "/imu_raw";
-        std::string topic_gps = "/gps/fix";
+        sub_imu_ = nh.subscribe(imu_topic, 10, &ESKF_Fusion::imu_callback, this);
+        sub_gnss_ = nh.subscribe(gps_topic, 10, &ESKF_Fusion::gnss_callback, this);
 
-        imu_sub_ = nh.subscribe(topic_imu, 10, &ESKF_Fusion::imu_callback, this);
-        gnss_sub_ = nh.subscribe(topic_gps, 10, &ESKF_Fusion::gnss_callback, this);
-
-        path_pub_ = nh.advertise<nav_msgs::Path>("nav/path", 10);
-        odom_pub_ = nh.advertise<nav_msgs::Odometry>("nav/odom", 10);
+        pub_odom_ = nh.advertise<nav_msgs::Odometry>(odom_topic, 10);
+        pub_path_ = nh.advertise<nav_msgs::Path>(path_topic, 10);
 
         // log files
-        file_gnss_.open("/home/work/gnss.csv");
-        file_state_.open("/home/work/fused_state.csv");
+        file_gnss_.open(save_path + "gnss.csv");
+        file_state_.open(save_path + "fused_state.csv");
 
         std::cout<<"[ ESKF ] Start."<<std::endl;
     }
@@ -49,10 +56,10 @@ public:
     void publish_save_state(void);
 
 private:
-   ros::Subscriber imu_sub_;
-   ros::Subscriber gnss_sub_;
-   ros::Publisher path_pub_;
-   ros::Publisher odom_pub_;
+   ros::Subscriber sub_imu_;
+   ros::Subscriber sub_gnss_;
+   ros::Publisher pub_path_;
+   ros::Publisher pub_odom_;
    nav_msgs::Path nav_path_;
 
    ESKFPtr eskf_ptr_;
@@ -112,6 +119,7 @@ void ESKF_Fusion::publish_save_state(void)
     T_wb.translation() = eskf_ptr_->state_ptr_->p_G_I;
     tf::poseEigenToMsg(T_wb, odom_msg.pose.pose);
     tf::vectorEigenToMsg(eskf_ptr_->state_ptr_->v_G_I, odom_msg.twist.twist.linear);
+    tf::vectorEigenToMsg(eskf_ptr_->state_ptr_->angular, odom_msg.twist.twist.angular);
     Eigen::Matrix3d P_pp = eskf_ptr_->state_ptr_->cov.block<3, 3>(0, 0);// position covariance
     Eigen::Matrix3d P_po = eskf_ptr_->state_ptr_->cov.block<3, 3>(0, 6);// position rotation covariance
     Eigen::Matrix3d P_op = eskf_ptr_->state_ptr_->cov.block<3, 3>(6, 0);// rotation position covariance
@@ -120,7 +128,7 @@ void ESKF_Fusion::publish_save_state(void)
     P_imu_pose << P_pp, P_po, P_op, P_oo;
     for (int i = 0; i < 36; i++)
         odom_msg.pose.covariance[i] = P_imu_pose.data()[i];
-    odom_pub_.publish(odom_msg);
+    pub_odom_.publish(odom_msg);
 
     // publish the path
     geometry_msgs::PoseStamped pose_stamped;
@@ -128,7 +136,7 @@ void ESKF_Fusion::publish_save_state(void)
     pose_stamped.pose = odom_msg.pose.pose;
     nav_path_.header = pose_stamped.header;
     nav_path_.poses.push_back(pose_stamped);
-    path_pub_.publish(nav_path_);
+    pub_path_.publish(nav_path_);
 
     // save state p q lla
     Eigen::Vector3d lla;

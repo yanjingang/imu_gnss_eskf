@@ -1,17 +1,34 @@
 <launch>
-    <param name="acc_noise"       type="double" value="1e-2" />
-    <param name="gyr_noise"       type="double" value="1e-4" />
-    <param name="acc_bias_noise"  type="double" value="1e-6" />
-    <param name="gyr_bias_noise"  type="double" value="1e-8" />
-    <param name="p_I_GNSS_x"      type="double" value="0."/>
-    <param name="p_I_GNSS_y"      type="double" value="0."/>
-    <param name="p_I_GNSS_z"      type="double" value="0."/>
+  <!-- input params  -->
+  <arg name="imu_topic" default="/imu_raw" />
+  <arg name="gps_topic" default="/gps/fix" />
+  <param name="acc_noise"       type="double" value="1e-2" />
+  <param name="gyr_noise"       type="double" value="1e-4" />
+  <param name="acc_bias_noise"  type="double" value="1e-6" />
+  <param name="gyr_bias_noise"  type="double" value="1e-8" />
+  <param name="p_I_GNSS_x"      type="double" value="0."/>
+  <param name="p_I_GNSS_y"      type="double" value="0."/>
+  <param name="p_I_GNSS_z"      type="double" value="0."/>
 
-    <node name="nmea_topic_driver" pkg="nmea_navsat_driver" type="nmea_topic_driver" output="screen" />
-    
-    <node name="imu_gnss_eskf_node" pkg="imu_gnss_eskf" type="imu_gnss_eskf_node" output="screen" />
+  <!-- output params  -->
+  <arg name="odom_topic" default="/nav/odom" />
+  <arg name="path_topic" default="/nav/path" />
+  <arg name="save_path" default="/home/work/" />
+  
 
-    <node pkg="rviz" type="rviz" name="rviz" output="screen" 
-      args="-d $(find imu_gnss_eskf)/rviz/imu_gnss_eskf.rviz" required="true">
-    </node>
+  <!-- nmea_navsat_driver  -->
+  <node name="nmea_topic_driver" pkg="nmea_navsat_driver" type="nmea_topic_driver" output="screen" />
+  
+  <!-- imu_gnss_eskf  -->
+  <node name="imu_gnss_eskf_node" pkg="imu_gnss_eskf" type="imu_gnss_eskf_node" output="screen">
+    <param name="imu_topic" value="$(arg imu_topic)" />
+    <param name="gps_topic" value="$(arg gps_topic)" />
+
+    <param name="odom_topic" value="$(arg odom_topic)" />
+    <param name="path_topic" value="$(arg path_topic)" />
+    <param name="save_path" value="$(arg save_path)" />
+  </node>
+
+  <!-- rviz  -->
+  <node pkg="rviz" type="rviz" name="rviz_imu_gnss_eskf" output="screen" args="-d $(find imu_gnss_eskf)/rviz/imu_gnss_eskf.rviz" required="true"/>
 </launch>

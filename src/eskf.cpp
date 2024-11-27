@@ -40,6 +40,7 @@ void ESKF::predict(IMUDataPtr last_imu_ptr, IMUDataPtr cur_imu_ptr)
     Eigen::Vector3d acc_nominal = last_state.R_G_I * acc_unbias + Eigen::Vector3d(0., 0., -g);
     state_ptr_->p_G_I = last_state.p_G_I + last_state.v_G_I * dt + 0.5 * acc_nominal * dt_2;
     state_ptr_->v_G_I = last_state.v_G_I + acc_nominal * dt;
+    state_ptr_->angular = last_state.angular + gyr_unbias * dt;
     Eigen::Vector3d delta_angle_axis = gyr_unbias * dt;
     Eigen::Matrix3d dR = Eigen::Matrix3d::Identity();
     if(delta_angle_axis.norm() > DBL_EPSILON)
@@ -195,6 +196,7 @@ bool ESKF::initialize(void)
     //state_ptr_->imu_data_ptr = last_imu_ptr_;
     state_ptr_->p_G_I.setZero();
     state_ptr_->v_G_I.setZero();
+    state_ptr_->angular.setZero();
     state_ptr_->acc_bias.setZero();
     state_ptr_->gyro_bias.setZero();
     state_ptr_->cov.setZero();

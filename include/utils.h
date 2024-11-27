@@ -36,11 +36,12 @@ using GNSSDataPtr = std::shared_ptr<GNSSData>;
 struct State{
     double timestamp;
 
-    Eigen::Vector3d p_G_I;
-    Eigen::Vector3d v_G_I;
-    Eigen::Matrix3d R_G_I;
+    Eigen::Vector3d p_G_I;      // odom_msg.pose.pose translation
+    Eigen::Vector3d v_G_I;      // odom_msg.twist.twist.linear
+    Eigen::Matrix3d R_G_I;      // odom_msg.pose.pose linear
     Eigen::Vector3d acc_bias;
     Eigen::Vector3d gyro_bias;
+    Eigen::Vector3d angular;    // odom_msg.twist.twist.angular
 
     Eigen::Matrix<double, 15, 15> cov;
 
