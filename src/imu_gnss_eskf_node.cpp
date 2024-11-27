@@ -132,7 +132,7 @@ void ESKF_Fusion::publish_save_state(void)
     nav_msgs::Odometry odom_msg;
     odom_msg.header.frame_id = frame_id;
     odom_msg.child_frame_id = child_frame_id;
-    odom_msg.header.stamp = ros::Time::now();
+    odom_msg.header.stamp = ros::Time(eskf_ptr_->state_ptr_->timestamp);
     Eigen::Isometry3d T_wb = Eigen::Isometry3d::Identity();
     T_wb.linear() = eskf_ptr_->state_ptr_->R_G_I;
     T_wb.translation() = eskf_ptr_->state_ptr_->p_G_I;
