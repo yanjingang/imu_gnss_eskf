@@ -2,27 +2,37 @@
   <!-- input params  -->
   <arg name="imu_topic" default="/imu_raw" />
   <arg name="gps_topic" default="/gps/fix" />
-  <param name="acc_noise"       type="double" value="0.01" />
-  <param name="gyr_noise"       type="double" value="0.0001" />
-  <param name="acc_bias_noise"  type="double" value="0.000001" />
-  <param name="gyr_bias_noise"  type="double" value="0.00000001" />
-  <param name="p_I_GNSS_x"      type="double" value="0.0"/>
-  <param name="p_I_GNSS_y"      type="double" value="0.0"/>
-  <param name="p_I_GNSS_z"      type="double" value="0.0"/>
+  <arg name="acc_noise"       default="0.01" />
+  <arg name="gyr_noise"       default="0.0001" />
+  <arg name="acc_bias_noise"  default="0.000001" />
+  <arg name="gyr_bias_noise"  default="0.00000001" />
+  <arg name="p_I_GNSS_x"      default="0.0"/>
+  <arg name="p_I_GNSS_y"      default="0.0"/>
+  <arg name="p_I_GNSS_z"      default="0.0"/>
 
   <!-- output params  -->
-  <arg name="odom_topic" default="/vehicle/odom" />
+  <arg name="odom_frame" default="odom_combined" />
+  <arg name="odom_child_frame" default="base_footprint" />
+  <arg name="odom_topic" default="/gps/odom" />
   <arg name="path_topic" default="/gps/path" />
   <arg name="save_path" default="/home/work/" />
   
 
   <!-- nmea_navsat_driver  -->
-  <node name="nmea_topic_driver" pkg="nmea_navsat_driver" type="nmea_topic_driver" output="screen" />
+  <!-- <node name="nmea_topic_driver" pkg="nmea_navsat_driver" type="nmea_topic_driver" output="screen" /> -->
   
   <!-- imu_gnss_eskf  -->
   <node name="imu_gnss_eskf_node" pkg="imu_gnss_eskf" type="imu_gnss_eskf_node" output="screen">
     <param name="imu_topic" value="$(arg imu_topic)" />
     <param name="gps_topic" value="$(arg gps_topic)" />
+
+    <param name="acc_noise" value="$(arg acc_noise)" />
+    <param name="gyr_noise" value="$(arg gyr_noise)" />
+    <param name="acc_bias_noise" value="$(arg acc_bias_noise)" />
+    <param name="gyr_bias_noise" value="$(arg gyr_bias_noise)" />
+    <param name="p_I_GNSS_x" value="$(arg p_I_GNSS_x)" />
+    <param name="p_I_GNSS_y" value="$(arg p_I_GNSS_y)" />
+    <param name="p_I_GNSS_z" value="$(arg p_I_GNSS_z)" />
 
     <param name="odom_topic" value="$(arg odom_topic)" />
     <param name="path_topic" value="$(arg path_topic)" />

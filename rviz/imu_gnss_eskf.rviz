@@ -5,7 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /Status1
         - /Grid1
         - /Path1
         - /Odometry1
@@ -110,14 +109,14 @@ Visualization Manager:
         Shaft Length: 1
         Shaft Radius: 0.05000000074505806
         Value: Axes
-      Topic: /vehicle/odom
+      Topic: /gps/odom
       Unreliable: false
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: global
+    Fixed Frame: odom_combined
     Frame Rate: 30
   Name: root
   Tools:
@@ -150,10 +149,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 1.0557291507720947
+      Scale: 3.3604366779327393
       Target Frame: vehicle
-      X: 105.311279296875
-      Y: -106.03534698486328
+      X: 30.916187286376953
+      Y: -10.214468002319336
     Saved: ~
 Window Geometry:
   Displays:
@@ -172,4 +171,4 @@ Window Geometry:
     collapsed: true
   Width: 1293
   X: 470
-  Y: 53
+  Y: 27

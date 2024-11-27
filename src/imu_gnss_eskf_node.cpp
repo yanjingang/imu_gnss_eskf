@@ -12,23 +12,25 @@ class ESKF_Fusion
 public:
     ESKF_Fusion(ros::NodeHandle nh)
     {
-        double acc_n, gyr_n, acc_w, gyr_w;
-        double x = 0.0, y, z;
-        nh.param("acc_noise", acc_n, 1e-2);
-        nh.param("gyr_noise", gyr_n, 1e-4);
-        nh.param("acc_bias_noise", acc_w, 1e-6);
-        nh.param("gyr_bias_noise", gyr_w, 1e-8);
-        nh.param("p_I_GNSS_x", x, 0.);
-        nh.param("p_I_GNSS_y", y, 0.);
-        nh.param("p_I_GNSS_z", z, 0.);
         std::string imu_topic = "/imu_raw";
         std::string gps_topic = "/gps/fix";
         std::string odom_topic = "/nav/odom";
         std::string path_topic = "/nav/path";
         std::string save_path = "/home/work/";
+        double acc_n, gyr_n, acc_w, gyr_w;
+        double x = 0.0, y, z;
         ros::NodeHandle n("~");
+        n.getParam("acc_noise", acc_n);
+        n.getParam("gyr_noise", gyr_n);
+        n.getParam("acc_bias_noise", acc_w);
+        n.getParam("gyr_bias_noise", gyr_w);
+        n.getParam("p_I_GNSS_x", x);
+        n.getParam("p_I_GNSS_y", y);
+        n.getParam("p_I_GNSS_z", z);
         n.getParam("imu_topic", imu_topic);
         n.getParam("gps_topic", gps_topic);
+        n.getParam("odom_frame", frame_id);
+        n.getParam("odom_child_frame", child_frame_id);
         n.getParam("odom_topic", odom_topic);
         n.getParam("path_topic", path_topic);
         n.getParam("save_path", save_path);
@@ -75,6 +77,8 @@ private:
     ros::Publisher pub_path_;
     ros::Publisher pub_odom_;
     nav_msgs::Path nav_path_;
+    std::string frame_id = "odom_combined";
+    std::string child_frame_id = "base_footprint";
 
     ESKFPtr eskf_ptr_;
 
@@ -125,9 +129,9 @@ void ESKF_Fusion::gnss_callback(const sensor_msgs::NavSatFixConstPtr &gnss_msg)
 void ESKF_Fusion::publish_save_state(void)
 {
     // publish the odometry
-    std::string fixed_id = "global";
     nav_msgs::Odometry odom_msg;
-    odom_msg.header.frame_id = fixed_id;
+    odom_msg.header.frame_id = frame_id;
+    odom_msg.child_frame_id = child_frame_id;
     odom_msg.header.stamp = ros::Time::now();
     Eigen::Isometry3d T_wb = Eigen::Isometry3d::Identity();
     T_wb.linear() = eskf_ptr_->state_ptr_->R_G_I;
