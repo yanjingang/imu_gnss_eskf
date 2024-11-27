@@ -11,8 +11,8 @@
   <param name="p_I_GNSS_z"      type="double" value="0."/>
 
   <!-- output params  -->
-  <arg name="odom_topic" default="/nav/odom" />
-  <arg name="path_topic" default="/nav/path" />
+  <arg name="odom_topic" default="/vehicle/odom" />
+  <arg name="path_topic" default="/gps/path" />
   <arg name="save_path" default="/home/work/" />
   
 
