@@ -24,18 +24,18 @@ public:
         eskf_ptr_ = std::make_shared<ESKF>(acc_n, gyr_n, acc_w, gyr_w, p_I_GNSS);
 
         // ROS sub & pub
-        std::string topic_imu = "/imu/data";
-        std::string topic_gps = "/fix";
+        std::string topic_imu = "/imu_raw";
+        std::string topic_gps = "/gps/fix";
 
         imu_sub_ = nh.subscribe(topic_imu, 10, &ESKF_Fusion::imu_callback, this);
         gnss_sub_ = nh.subscribe(topic_gps, 10, &ESKF_Fusion::gnss_callback, this);
 
-        path_pub_ = nh.advertise<nav_msgs::Path>("nav_path", 10);
-        odom_pub_ = nh.advertise<nav_msgs::Odometry>("nav_odom", 10);
+        path_pub_ = nh.advertise<nav_msgs::Path>("nav/path", 10);
+        odom_pub_ = nh.advertise<nav_msgs::Odometry>("nav/odom", 10);
 
         // log files
-        file_gnss_.open("/home/rick/gnss.csv");
-        file_state_.open("/home/rick/fused_state.csv");
+        file_gnss_.open("/home/work/gnss.csv");
+        file_state_.open("/home/work/fused_state.csv");
 
         std::cout<<"[ ESKF ] Start."<<std::endl;
     }
@@ -73,12 +73,11 @@ void ESKF_Fusion::imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
     imu_data_ptr->gyro[1] = imu_msg->angular_velocity.y;
     imu_data_ptr->gyro[2] = imu_msg->angular_velocity.z;
     if(!eskf_ptr_->process_IMU_Data(imu_data_ptr)) return;
-    publish_save_state();
 }
 
 void ESKF_Fusion::gnss_callback(const sensor_msgs::NavSatFixConstPtr &gnss_msg)
 {
-    if(gnss_msg->status.status != 2)
+    if(gnss_msg->status.status < 0) // -1无法修复位置, 0未增强修复, 1使用卫星增强 2使用地面增强
     {
         std::cout<<"[ ESKF ] Bad GNSS data."<<std::endl;
         return;
@@ -95,6 +94,9 @@ void ESKF_Fusion::gnss_callback(const sensor_msgs::NavSatFixConstPtr &gnss_msg)
                << gnss_data_ptr->lla[0] << ", "
                << gnss_data_ptr->lla[1] <<", "
                << gnss_data_ptr->lla[2] << std::endl;
+    
+    // gnss帧率低，所以只在gnss修正后再发布odom和path
+    publish_save_state();
 }
 
 

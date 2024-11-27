@@ -94,8 +94,12 @@ void ESKF::predict(IMUDataPtr last_imu_ptr, IMUDataPtr cur_imu_ptr)
 void ESKF::update(GNSSDataPtr gnss_data_ptr)
 {
     //std::cout<<"[ ESKF ] GNSS and IMU timestamp: "<<gnss_data_ptr->timestamp<<", "<<state_ptr_->timestamp<<", "<<gnss_data_ptr->timestamp - state_ptr_->timestamp<<std::endl;
-    //double dt = gnss_data_ptr->timestamp - state_ptr_->timestamp;
-    //if(abs(dt) > 0.01) return;
+    double dt = gnss_data_ptr->timestamp - state_ptr_->timestamp;
+    if(abs(dt) > 0.01) {
+        std::cout<<"[ ESKF ] gnss - state time gap is too large " << dt <<std::endl;
+        // return;
+    }
+    
     Eigen::Vector3d p_G_GNSS;
     convert_lla_to_enu(init_lla_, gnss_data_ptr->lla, &p_G_GNSS);
     Eigen::Vector3d &p_G_I = state_ptr_->p_G_I;
