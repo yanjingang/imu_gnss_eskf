@@ -10,16 +10,10 @@
 class ESKF_Fusion
 {
 public:
-    ESKF_Fusion(ros::NodeHandle nh){
-        std::string imu_topic = "/imu_raw";
-        std::string gps_topic = "/gps/fix";
-        std::string odom_topic = "/nav/odom";
-        std::string path_topic = "/nav/path";
-        std::string save_path = "/home/work/";
+    ESKF_Fusion(ros::NodeHandle nh)
+    {
         double acc_n, gyr_n, acc_w, gyr_w;
-        double x, y, z;
-        nh.param("imu_topic", imu_topic);
-        nh.param("gps_topic", gps_topic);
+        double x = 0.0, y, z;
         nh.param("acc_noise", acc_n, 1e-2);
         nh.param("gyr_noise", gyr_n, 1e-4);
         nh.param("acc_bias_noise", acc_w, 1e-6);
@@ -27,9 +21,29 @@ public:
         nh.param("p_I_GNSS_x", x, 0.);
         nh.param("p_I_GNSS_y", y, 0.);
         nh.param("p_I_GNSS_z", z, 0.);
-        nh.param("odom_topic", odom_topic);
-        nh.param("path_topic", path_topic);
-        nh.param("save_path", save_path);
+        std::string imu_topic = "/imu_raw";
+        std::string gps_topic = "/gps/fix";
+        std::string odom_topic = "/nav/odom";
+        std::string path_topic = "/nav/path";
+        std::string save_path = "/home/work/";
+        ros::NodeHandle n("~");
+        n.getParam("imu_topic", imu_topic);
+        n.getParam("gps_topic", gps_topic);
+        n.getParam("odom_topic", odom_topic);
+        n.getParam("path_topic", path_topic);
+        n.getParam("save_path", save_path);
+        std::cout << "[ ESKF ] Param imu_topic:" << imu_topic << std::endl;
+        std::cout << "[ ESKF ] Param gps_topic:" << gps_topic << std::endl;
+        std::cout << "[ ESKF ] Param acc_noise:" << acc_n << std::endl;
+        std::cout << "[ ESKF ] Param gyr_noise:" << gyr_n << std::endl;
+        std::cout << "[ ESKF ] Param acc_bias_noise:" << acc_w << std::endl;
+        std::cout << "[ ESKF ] Param gyr_bias_noise:" << gyr_w << std::endl;
+        std::cout << "[ ESKF ] Param p_I_GNSS_x:" << x << std::endl;
+        std::cout << "[ ESKF ] Param p_I_GNSS_y:" << y << std::endl;
+        std::cout << "[ ESKF ] Param p_I_GNSS_z:" << z << std::endl;
+        std::cout << "[ ESKF ] Param odom_topic:" << odom_topic << std::endl;
+        std::cout << "[ ESKF ] Param path_topic:" << path_topic << std::endl;
+        std::cout << "[ ESKF ] Param save_path:" << save_path << std::endl;
         const Eigen::Vector3d p_I_GNSS(x, y, z);
         eskf_ptr_ = std::make_shared<ESKF>(acc_n, gyr_n, acc_w, gyr_w, p_I_GNSS);
 
@@ -44,7 +58,7 @@ public:
         file_gnss_.open(save_path + "gnss.csv");
         file_state_.open(save_path + "fused_state.csv");
 
-        std::cout<<"[ ESKF ] Start."<<std::endl;
+        std::cout << "[ ESKF ] Start." << std::endl;
     }
     ~ESKF_Fusion()
     {
@@ -56,17 +70,17 @@ public:
     void publish_save_state(void);
 
 private:
-   ros::Subscriber sub_imu_;
-   ros::Subscriber sub_gnss_;
-   ros::Publisher pub_path_;
-   ros::Publisher pub_odom_;
-   nav_msgs::Path nav_path_;
+    ros::Subscriber sub_imu_;
+    ros::Subscriber sub_gnss_;
+    ros::Publisher pub_path_;
+    ros::Publisher pub_odom_;
+    nav_msgs::Path nav_path_;
 
-   ESKFPtr eskf_ptr_;
+    ESKFPtr eskf_ptr_;
 
-   // log files
-   std::ofstream file_gnss_;
-   std::ofstream file_state_;
+    // log files
+    std::ofstream file_gnss_;
+    std::ofstream file_state_;
 };
 
 void ESKF_Fusion::imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
@@ -79,14 +93,15 @@ void ESKF_Fusion::imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
     imu_data_ptr->gyro[0] = imu_msg->angular_velocity.x;
     imu_data_ptr->gyro[1] = imu_msg->angular_velocity.y;
     imu_data_ptr->gyro[2] = imu_msg->angular_velocity.z;
-    if(!eskf_ptr_->process_IMU_Data(imu_data_ptr)) return;
+    if (!eskf_ptr_->process_IMU_Data(imu_data_ptr))
+        return;
 }
 
 void ESKF_Fusion::gnss_callback(const sensor_msgs::NavSatFixConstPtr &gnss_msg)
 {
-    if(gnss_msg->status.status < 0) // -1无法修复位置, 0未增强修复, 1使用卫星增强 2使用地面增强
+    if (gnss_msg->status.status < 0) // -1无法修复位置, 0未增强修复, 1使用卫星增强 2使用地面增强
     {
-        std::cout<<"[ ESKF ] Bad GNSS data."<<std::endl;
+        std::cout << "[ ESKF ] Bad GNSS data." << std::endl;
         return;
     }
     GNSSDataPtr gnss_data_ptr = std::make_shared<GNSSData>();
@@ -95,17 +110,17 @@ void ESKF_Fusion::gnss_callback(const sensor_msgs::NavSatFixConstPtr &gnss_msg)
     gnss_data_ptr->lla[1] = gnss_msg->longitude;
     gnss_data_ptr->lla[2] = gnss_msg->altitude;
     gnss_data_ptr->cov = Eigen::Map<const Eigen::Matrix3d>(gnss_msg->position_covariance.data());
-    if(!eskf_ptr_->process_GNSS_Data(gnss_data_ptr)) return;
+    if (!eskf_ptr_->process_GNSS_Data(gnss_data_ptr))
+        return;
     file_gnss_ << std::fixed << std::setprecision(15)
                << gnss_data_ptr->timestamp << ", "
                << gnss_data_ptr->lla[0] << ", "
-               << gnss_data_ptr->lla[1] <<", "
+               << gnss_data_ptr->lla[1] << ", "
                << gnss_data_ptr->lla[2] << std::endl;
-    
+
     // gnss帧率低，所以只在gnss修正后再发布odom和path
     publish_save_state();
 }
-
 
 void ESKF_Fusion::publish_save_state(void)
 {
@@ -120,10 +135,10 @@ void ESKF_Fusion::publish_save_state(void)
     tf::poseEigenToMsg(T_wb, odom_msg.pose.pose);
     tf::vectorEigenToMsg(eskf_ptr_->state_ptr_->v_G_I, odom_msg.twist.twist.linear);
     tf::vectorEigenToMsg(eskf_ptr_->state_ptr_->angular, odom_msg.twist.twist.angular);
-    Eigen::Matrix3d P_pp = eskf_ptr_->state_ptr_->cov.block<3, 3>(0, 0);// position covariance
-    Eigen::Matrix3d P_po = eskf_ptr_->state_ptr_->cov.block<3, 3>(0, 6);// position rotation covariance
-    Eigen::Matrix3d P_op = eskf_ptr_->state_ptr_->cov.block<3, 3>(6, 0);// rotation position covariance
-    Eigen::Matrix3d P_oo = eskf_ptr_->state_ptr_->cov.block<3, 3>(6, 6);// rotation covariance
+    Eigen::Matrix3d P_pp = eskf_ptr_->state_ptr_->cov.block<3, 3>(0, 0); // position covariance
+    Eigen::Matrix3d P_po = eskf_ptr_->state_ptr_->cov.block<3, 3>(0, 6); // position rotation covariance
+    Eigen::Matrix3d P_op = eskf_ptr_->state_ptr_->cov.block<3, 3>(6, 0); // rotation position covariance
+    Eigen::Matrix3d P_oo = eskf_ptr_->state_ptr_->cov.block<3, 3>(6, 6); // rotation covariance
     Eigen::Matrix<double, 6, 6, Eigen::RowMajor> P_imu_pose = Eigen::Matrix<double, 6, 6>::Zero();
     P_imu_pose << P_pp, P_po, P_op, P_oo;
     for (int i = 0; i < 36; i++)
@@ -142,13 +157,13 @@ void ESKF_Fusion::publish_save_state(void)
     Eigen::Vector3d lla;
     convert_enu_to_lla(eskf_ptr_->init_lla_, eskf_ptr_->state_ptr_->p_G_I, &lla);
     Eigen::Quaterniond q_G_I(eskf_ptr_->state_ptr_->R_G_I);
-    file_state_ << std::fixed << std::setprecision(15) << eskf_ptr_->state_ptr_->timestamp <<", "
+    file_state_ << std::fixed << std::setprecision(15) << eskf_ptr_->state_ptr_->timestamp << ", "
                 << eskf_ptr_->state_ptr_->p_G_I[0] << ", " << eskf_ptr_->state_ptr_->p_G_I[1] << ", " << eskf_ptr_->state_ptr_->p_G_I[2] << ", "
                 << q_G_I.x() << ", " << q_G_I.y() << ", " << q_G_I.z() << ", " << q_G_I.w() << ", "
                 << lla[0] << ", " << lla[1] << ", " << lla[2]
                 << std::endl;
-    std::cout << "bias of acc: "<<eskf_ptr_->state_ptr_->acc_bias.transpose()<<std::endl;
-    std::cout << "bias of gyr: "<<eskf_ptr_->state_ptr_->gyro_bias.transpose()<<std::endl;
+    std::cout << "bias of acc: " << eskf_ptr_->state_ptr_->acc_bias.transpose() << std::endl;
+    std::cout << "bias of gyr: " << eskf_ptr_->state_ptr_->gyro_bias.transpose() << std::endl;
 }
 
 int main(int argc, char **argv)

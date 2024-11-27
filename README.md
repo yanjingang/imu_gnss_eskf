@@ -22,7 +22,7 @@ It is tested under Ubuntu 20.04 + ROS noetic.
 
 ### 2. Build
 
-Clone the repository to the catkin work space eg. `/catkin_ws/src`
+Clone the repository
 ````
 git clone https://github.com/yanjingang/imu_gnss_eskf.git
 ````
@@ -31,15 +31,15 @@ Compile
 cd ~/catkin_ws
 catkin_make
 ````
-### 3. Run with EU dataset
+### 3. Run
 
-Run the following launch file
+Run launch file
 ````
 roslaunch imu_gnss_eskf imu_gnss_eskf.launch
 ````
-Play the following bag file
+Play autoware bag file
 ````
-rosbag play utbm_robocar_dataset_**.bag
+rosbag play autoware-20241124082629.bag -r1 /vehicle/odom:=/vehicle/odom_discard
 ````
 
 
